@@ -1,0 +1,41 @@
+.article-detail {
+    padding: 3rem 0;
+    background-color: #ffffff;
+  }
+  
+  .article-detail .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+  
+  .article-detail-image {
+    width: 100%;
+    height: 400px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .article-detail h1 {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: #333;
+  }
+  
+  .article-detail-date {
+    font-size: 1rem;
+    color: #666;
+    margin-bottom: 2rem;
+  }
+  
+  .article-detail-content {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: #444;
+  }
+  
+  .article-detail-content p {
+    margin-bottom: 1.5rem;
+  }
