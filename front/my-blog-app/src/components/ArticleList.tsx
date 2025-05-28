@@ -1,6 +1,5 @@
 import React from "react";
 import type { Article } from "../data/aricles";
-import "./ArticleList.css";
 import { Link } from "react-router-dom";
 
 type ArticleListProps = {
@@ -9,27 +8,25 @@ type ArticleListProps = {
 
 export const ArticleList: React.FC<ArticleListProps> = ({ articles }) => {
   return (
-    <section className="article-list">
-      <div className="container">
-        <h2>最新の記事</h2>
-        <div className="ariticles-grid">
+    <section className="py-12 bg-gray-50"> 
+      <div className="container mx-auto px-4"> 
+        <h2 className="text-4xl font-extrabold text-center mb-10 text-gray-800">最新の記事</h2>
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {articles.map((article) => (
-            <div key={article.id} className="article-card">
-              <img
-                src={article.imageUrl}
-                alt={article.title}
-                className="article-card-image"
-              />
-              <div className="article-card-content">
-                <h3>{article.title}</h3>
-                <p className="article-excerpt">{article.excerpt}</p>
-                <span className="article-=date">{article.publishedAt}</span>
-                <Link to={`/articles/${article.id}`}>Read More</Link>
+            <div key={article.id} className="bg-white rounded-lg shadow-lg overflow-hidden transition-transform duration-300 hover:scale-105"> 
+              <img src={article.imageUrl} alt={article.title} className="w-full h-48 object-cover" /> 
+              <div className="p-6"> 
+                <h3 className="text-xl font-bold mb-2 text-gray-900 min-h-[3rem]">{article.title}</h3> 
+                <p className="text-gray-600 mb-4 text-base leading-relaxed">{article.excerpt}</p> 
+                <span className="block text-sm text-gray-500 mb-4">{article.publishedAt}</span> 
+                <Link to={`/articles/${article.id}`} className="inline-block bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 transition duration-300">
+                  続きを読む &raquo;
+                </Link>
               </div>
             </div>
           ))}
         </div>
       </div>
-    </section>
-  );
+    </section>  
+    );
 };
