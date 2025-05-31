@@ -1,6 +1,5 @@
 import { Link, Route, Routes } from 'react-router-dom'
 import { ArticleList } from './components/ArticleList'
-import { articles } from './data/aricles'
 import ArticleDetail from './components/ArticleDetail'
 
 function App() {
@@ -23,7 +22,7 @@ function App() {
 
     <main>
       <Routes>
-        <Route path="/" element={<ArticleList articles={articles} />} />
+        <Route path="/" element={<ArticleList />} />
         <Route path="/articles/:id" element={<ArticleDetail />} />
         <Route path="/about" element={<div className="container" style={{padding: '50px 20px'}}><h2>About</h2><p>まだ作成中ですが、当ブログではReactやフロントエンドに関する最新情報を発信していきます。</p></div>} />
         <Route path="/contact" element={<div className="container" style={{padding: '50px 20px'}}><h2>Contact</h2><p>何かご不明な点があれば、お気軽にお問い合わせください。</p></div>} />

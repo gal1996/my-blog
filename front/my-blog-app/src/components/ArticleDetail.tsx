@@ -1,13 +1,63 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { articles } from '../data/aricles'
+import type { Article } from './ArticleList'
 
 const ArticleDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>()
-    const article = articles.find((article) => article.id === Number(id))
+    const [article, setArticle] = useState<Article | null>(null)
+    const [loading, setLoading] = useState<boolean>(true)
+    const [error, setError] = useState<string | null>(null)
+
+    useEffect(() => {
+    if (!id) { // idがない場合は処理しない
+      setError('記事IDが指定されていません。');
+      setLoading(false);
+      return;
+    }
+
+    const fetchArticle = async () => {
+      try {
+        // Next.jsバックエンドのAPIエンドポイント
+        const response = await fetch(`http://localhost:3000/api/articles/${id}`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data: Article = await response.json();
+        setArticle(data);
+      } catch (e: unknown) {
+        const error = e as Error;
+        setError(error.message || 'An error occurred');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchArticle();
+  }, [id]); // idが変更されたときに再度APIを呼び出す
+
+    if (loading) {
+        return (
+        <div className="flex justify-center items-center h-screen bg-gray-50">
+            <p className="text-xl text-gray-700">Loading...</p>
+        </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex justify-center items-center h-screen bg-gray-50">
+                <p className="text-xl text-red-500">Error: {error}</p>
+            </div>
+        );
+    }
 
     if (!article) {
-        return <div>記事が見つかりません</div>
+        return (
+        <div className="flex justify-center items-center h-screen bg-gray-50">
+            <p className="text-xl text-red-500">エラーが発生しました: {error}</p>
+        </div>
+        );
     }
 
     return (

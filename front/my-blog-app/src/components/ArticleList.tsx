@@ -1,12 +1,59 @@
-import React from "react";
-import type { Article } from "../data/aricles";
+import React, { useEffect } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 
-type ArticleListProps = {
-  articles: Article[];
+export type Article = {
+  id: number;
+  title: string;
+  excerpt: string;
+  content: string;
+  imageUrl: string;
+  publishedAt: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
-export const ArticleList: React.FC<ArticleListProps> = ({ articles }) => {
+export const ArticleList: React.FC = () => {
+  const [articles, setArticles] = useState<Article[]>([]); 
+  const [loading, setLoading] = useState<boolean>(true); 
+  const [error, setError] = useState<string | null>(null); 
+
+
+  useEffect(() => {
+    const fetchArticlts = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/api/articles');
+        if (!response.ok) {
+          throw new Error('Failed to fetch articles');
+        }
+        const data = await response.json();
+        setArticles(data);
+      } catch (error) {
+        setError(error instanceof Error ? error.message : 'An error occurred');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchArticlts();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-gray-50">
+        <p className="text-xl text-gray-700">Loading...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-gray-50">
+        <p className="text-xl text-red-500">Error: {error}</p>
+      </div>
+    );
+  }
+
   return (
     <section className="py-12 bg-gray-50"> 
       <div className="container mx-auto px-4"> 
