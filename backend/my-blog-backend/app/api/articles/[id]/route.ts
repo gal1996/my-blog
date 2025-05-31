@@ -1,16 +1,13 @@
-import { articles } from '../../articles/route'; // 全ての記事データをインポート
+import { articles } from '@/app/data/articles'; // 全ての記事データをインポート
 import { NextRequest } from 'next/server'; // Next.jsのRequest型をインポート
 
 // 動的なパラメーターの型定義
-type Params = {
-  params: {
-    id: string; // URLから取得するidは文字列
-  };
-};
-
 // GETリクエストを処理する関数
-export async function GET(request: NextRequest, { params }: Params) {
-  const { id } = params; // URLからidを取得
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const id = (await params).id; // URLからidを取得
 
   const article = articles.find((a) => a.id === Number(id)); // idに一致する記事を探す (数値に変換)
 

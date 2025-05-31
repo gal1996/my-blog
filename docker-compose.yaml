@@ -1,0 +1,34 @@
+# docker-compose.yml (my-blog-app と my-blog-backend の親ディレクトリに配置)
+
+version: '3.8' # Docker Composeのバージョンを指定
+
+services:
+  # フロントエンドサービス
+  frontend:
+    build:
+      context: ./front/my-blog-app # Dockerfileが存在するディレクトリ
+      dockerfile: Dockerfile
+    container_name: my-blog-frontend
+    ports:
+      - "5173:5173" # ホストの5173ポートをコンテナの5173ポートにマッピング
+    depends_on:
+      - backend # バックエンドが起動してからフロントエンドを起動 (必須ではないが、依存関係を明示)
+    # volumes:
+      # 開発時にはソースコードをマウントしてホットリロードを有効にする
+      # 本番イメージでは不要（コメントアウトするか、別途本番用composeファイルを用意）
+      # - ./my-blog-app:/app
+      # - /app/node_modules # ホストのnode_modulesがコンテナ内を上書きしないように匿名ボリュームを使う
+
+  # バックエンドサービス
+  backend:
+    build:
+      context: ./backend/my-blog-backend # Dockerfileが存在するディレクトリ
+      dockerfile: Dockerfile
+    container_name: my-blog-backend
+    ports:
+      - "3000:3000" # ホストの3000ポートをコンテナの3000ポートにマッピング
+    # volumes:
+      # 開発時にはソースコードをマウントしてホットリロードを有効にする
+      # 本番イメージでは不要（コメントアウトするか、別途本番用composeファイルを用意）
+      # - ./my-blog-backend:/app
+      # - /app/node_modules # ホストのnode_modulesがコンテナ内を上書きしないように匿名ボリュームを使う
