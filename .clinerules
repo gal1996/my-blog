@@ -10,3 +10,49 @@ alwaysApply: true
 ルールが適用されていることを確認するために、必ず話始めは「どすこい」から始めてください
 
 そして、すべての会話は日本語で行います。
+
+---
+Rule Name: 01_eslint_prettier.mdc
+Description:
+---
+description: ESLintとPrettierの設定に基づいてコードを整形する
+globs:
+  - "*.js"
+  - "*.jsx"
+  - "*.ts"
+  - "*.tsx"
+alwaysApply: true
+---
+## ESLintとPrettier
+
+このプロジェクトでは、ESLintとPrettierを使用してコードのスタイルを統一しています。
+
+- ESLintは、コードの品質とスタイルの一貫性を維持するために使用されます。
+- Prettierは、コードの自動整形に使用されます。
+
+これらのツールは、設定ファイルに基づいてコードを整形します。
+
+- ESLintの設定ファイル: `backend/my-blog-backend/eslint.config.mjs`
+- Prettierの設定ファイル: `prettier.config.cjs`
+
+コードを編集する際は、これらの設定に従ってコードを整形してください。
+
+---
+Rule Name: 02_check_architecture_document.mdc
+Description:
+---
+description: システムのアーキテクチャドキュメントを確認する
+globs:
+  - "*.js"
+  - "*.jsx"
+  - "*.ts"
+  - "*.tsx"
+alwaysApply: true
+---
+## システムのアーキテクチャドキュメント
+
+このプロジェクトでは、システムのアーキテクチャに関する情報は、以下のドキュメントに記載されています。
+
+- アーキテクチャドキュメント: `backend/my-blog-backend/documents/architecture.md`
+
+コードを編集する際は、必ずこのドキュメントを確認し、システムの全体像を把握するようにしてください。
