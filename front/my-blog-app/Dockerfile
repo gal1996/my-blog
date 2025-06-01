@@ -28,14 +28,11 @@ WORKDIR /app
 
 # ビルドステージからビルド済みのファイルをコピー
 COPY --from=builder /app/dist ./dist
-
-# package.jsonをコピー (必要であれば)
-COPY --from=builder /app/package.json ./
-# COPY --from=builder /app/pnpm-lock.yaml ./
-# COPY --from=builder /app/node_modules ./node_modules
+COPY package.json pnpm-lock.yaml ./
 
 # pnpmをインストール
 RUN npm install -g pnpm
+RUN pnpm install --frozen-lockfile --prod
 
 # 本番環境の依存関係のみをインストール (もしあれば)
 # この例ではViteはビルド時に静的ファイルを生成するので、ランタイム依存は少ない
