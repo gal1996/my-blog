@@ -11,7 +11,7 @@
 ### 1.2 技術スタック
 
 | カテゴリ     | 技術名          | バージョン (参考) | 説明                                   |
-| :----------- | :-------------- | :---------------- | :------------------------------------- |
+| ----------- | -------------- | ---------------- | ------------------------------------- |
 | フレームワーク | Next.js         | 最新 (App Router) | Reactフレームワーク、API Routes機能を使用。 |
 | 言語         | TypeScript      | ^5.2.2            | 静的型付けを導入し、開発効率と堅牢性を向上。 |
 | パッケージ管理 | pnpm            | 最新              | 高速かつディスク効率の良いパッケージ管理。 |
@@ -115,6 +115,7 @@ Access-Control-Allow-Origin などのCORSヘッダーが含まれます。
   "publishedAt": "2023-04-01"
 }
 例 (404 Not Found): (ボディは Article not found の文字列、ステータスは404)
+```
 
 3. 開発手順と環境構築
 3.1 前提条件
@@ -124,24 +125,30 @@ Docker Desktop (Docker, Docker Compose)
 コードエディタ (VS Code推奨)
 3.2 ローカル開発サーバーの起動
 バックエンドのセットアップ:
-Bash
 
+```bash
 cd my-blog-backend
 pnpm install
 # 開発環境起動 (Next.js API Routes)
 pnpm dev
+```
+
 バックエンドが http://localhost:3000 で起動していることを確認。
 3.3 Docker Composeでの統合起動
 フロントエンドとバックエンドの親ディレクトリに移動。
 docker-compose.yml ファイルが存在することを確認。
 コンテナイメージのビルド:
-Bash
 
+```bash
 docker compose build
-コンテナの起動:
-Bash
+```
 
+コンテナの起動:
+
+```bash
 docker compose up
+```
+
 ブラウザで http://localhost:3000/api/articles にアクセスし、APIが正常にデータを返していることを確認。
 4. 注意点と制約
 CORSポリシー: 開発環境では Access-Control-Allow-Origin: http://localhost:5173 がハードコードされている。本番デプロイ時には、実際のフロントエンドドメインに合わせた動的または固定のオリジン設定が必要。
