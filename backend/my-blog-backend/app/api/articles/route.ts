@@ -1,4 +1,4 @@
-import { articles } from '@/app/data/articles';
+import { articles } from '../../data/articles';
 
 // GETリクエストを処理する関数
 export async function GET() {
