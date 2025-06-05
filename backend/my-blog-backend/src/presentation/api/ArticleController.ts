@@ -4,7 +4,7 @@ import { GetArticleById } from '../../application/use-cases/GetArticleById';
 export class ArticleController {
   constructor(
     private readonly getAllArticles: GetAllArticles,
-    private readonly getArticleById: GetArticleById
+    private readonly getArticleById?: GetArticleById
   ) {}
 
   async handleGetAllArticles(): Promise<Response> {
@@ -17,6 +17,9 @@ export class ArticleController {
   }
 
   async handleGetArticleById(id: number): Promise<Response> {
+    if (!this.getArticleById) {
+      return this.createCorsResponse('GetArticleById use case not available', 500);
+    }
     try {
       const article = await this.getArticleById.execute(id);
       if (!article) {

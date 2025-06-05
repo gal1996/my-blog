@@ -4,7 +4,7 @@ import { InMemoryArticleRepository } from '../../../src/infrastructure/repositor
 
 const articleRepository = new InMemoryArticleRepository();
 const getAllArticles = new GetAllArticles(articleRepository);
-const articleController = new ArticleController(getAllArticles, null as any);
+const articleController = new ArticleController(getAllArticles);
 
 export async function GET() {
   return await articleController.handleGetAllArticles();
