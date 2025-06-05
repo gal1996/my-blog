@@ -1,33 +1,18 @@
-import { articles } from '@/app/data/articles'; // 全ての記事データをインポート
-import { NextRequest } from 'next/server'; // Next.jsのRequest型をインポート
+import { ArticleController } from '../../../../src/presentation/api/ArticleController';
+import { GetAllArticles } from '../../../../src/application/use-cases/GetAllArticles';
+import { GetArticleById } from '../../../../src/application/use-cases/GetArticleById';
+import { InMemoryArticleRepository } from '../../../../src/infrastructure/repositories/InMemoryArticleRepository';
+import { NextRequest } from 'next/server';
 
-// 動的なパラメーターの型定義
-// GETリクエストを処理する関数
+const articleRepository = new InMemoryArticleRepository();
+const getAllArticles = new GetAllArticles(articleRepository);
+const getArticleById = new GetArticleById(articleRepository);
+const articleController = new ArticleController(getAllArticles, getArticleById);
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const id = (await params).id; // URLからidを取得
-
-  const article = articles.find((a) => a.id === Number(id)); // idに一致する記事を探す (数値に変換)
-
-  const responseHeaders = new Headers();
-  responseHeaders.set('Access-Control-Allow-Origin', 'http://localhost:5173'); // ここもフロントエンドのオリジンを指定
-  responseHeaders.set(
-    'Access-Control-Allow-Methods',
-    'GET, POST, PUT, DELETE, OPTIONS'
-  );
-  responseHeaders.set(
-    'Access-Control-Allow-Headers',
-    'Content-Type, Authorization'
-  );
-
-  if (!article) {
-    return new Response('Article not found', { status: 404 }); // 記事が見つからない場合は404エラー
-  }
-
-  return new Response(JSON.stringify(article), {
-    status: 200,
-    headers: responseHeaders,
-  });
+  const id = (await params).id;
+  return await articleController.handleGetArticleById(Number(id));
 }
