@@ -157,3 +157,92 @@ CRUD操作: 現在は GET メソッドのみをサポート。記事の作成 (P
 認証/認可: APIへのアクセス制御（認証・認可）は未実装。
 エラーハンドリング: より詳細なエラーメッセージやロギングの強化が必要。
 パフォーマンス: 大規模なデータセットに対するクエリ最適化やページネーションは未実装。
+
+---
+
+## 5. データベース基盤構築 (2025/06/08)
+
+実運用に向け、永続化データストレージとコンテナベースの開発環境を整備しました。
+
+### 5.1 コンテナベースデータベース環境
+
+**docker-compose.yaml更新内容**:
+- **PostgreSQL 16**: メインデータベース（ポート5432）
+- **Redis 7**: セッション管理・キャッシュ用（ポート16379）
+- **MinIO**: S3互換オブジェクトストレージ（API:9000, 管理画面:9001）
+- ヘルスチェック機能付きでサービス間依存関係を設定
+
+### 5.2 Prisma ORM導入
+
+**技術選定理由**:
+- TypeScript統合に優れたORM
+- **DTOパターン採用**: ドメインレイヤーとインフラレイヤーを分離
+- 既存のクリーンアーキテクチャ構造を維持
+
+**スキーマ設計** (`prisma/schema.prisma`):
+```typescript
+model Article {
+  id          String   @id @default(cuid())
+  title       String
+  excerpt     String?
+  content     String
+  imageUrl    String?
+  publishedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // SEO関連
+  slug        String   @unique
+  metaTitle   String?
+  metaDescription String?
+  
+  // 下書き・公開状態
+  status      ArticleStatus @default(DRAFT)
+  
+  // 将来の拡張用
+  authorId    String?
+  categoryId  String?
+  tags        String[] @default([])
+}
+
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+```
+
+### 5.3 アーキテクチャ方針
+
+**Prisma利用思想**:
+- **DTOパターン**: PrismaモデルはData Transfer Objectとして活用
+- **ドメイン独立性**: 既存のクリーンアーキテクチャ構造を維持
+- **Infrastructure層でマッピング**: Prismaモデル ↔ ドメインエンティティ変換
+
+**データベース構成**:
+- **PostgreSQL**: メインデータベース（ACID特性重視）
+- **Redis**: セッション管理・キャッシュ用
+- **MinIO**: S3互換オブジェクトストレージ（画像・ファイル用）
+
+### 5.4 環境構築手順
+
+```bash
+# データベース群起動
+docker-compose up -d postgres redis minio
+
+# マイグレーション実行（初回のみ）
+cd backend/my-blog-backend
+npx prisma migrate dev --name init
+
+# Prisma Client生成
+npx prisma generate
+```
+
+### 5.5 今後の実装予定
+
+1. **PrismaRepository実装**: InMemoryRepository置き換え
+2. **記事入稿機能**: バックエンドAPI実装
+3. **記事入稿UI**: フロントエンド実装
+4. **認証・認可システム**: ユーザー管理機能
+
+この構築により、スケーラブルなデータ永続化基盤と、本格的なブログシステム開発の準備が整いました。

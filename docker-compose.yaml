@@ -3,6 +3,47 @@
 version: '3.8' # Docker Composeのバージョンを指定
 
 services:
+  # データベースサービス
+  postgres:
+    image: postgres:16-alpine
+    container_name: my-blog-postgres
+    environment:
+      POSTGRES_DB: myblog
+      POSTGRES_USER: myblog_user
+      POSTGRES_PASSWORD: myblog_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myblog_user -d myblog"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis サービス
+  redis:
+    image: redis:7-alpine
+    container_name: my-blog-redis
+    ports:
+      - "16379:6379"
+    volumes:
+      - redis_data:/data
+
+  # MinIO サービス (S3互換オブジェクトストレージ)
+  minio:
+    image: minio/minio:latest
+    container_name: my-blog-minio
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+
   # フロントエンドサービス
   frontend:
     build:
@@ -25,10 +66,28 @@ services:
       context: ./backend/my-blog-backend # Dockerfileが存在するディレクトリ
       dockerfile: Dockerfile
     container_name: my-blog-backend
+    environment:
+      DATABASE_URL: postgresql://myblog_user:myblog_password@postgres:5432/myblog
+      REDIS_URL: redis://redis:6379
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin123
     ports:
       - "3000:3000" # ホストの3000ポートをコンテナの3000ポートにマッピング
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      minio:
+        condition: service_started
     # volumes:
       # 開発時にはソースコードをマウントしてホットリロードを有効にする
       # 本番イメージでは不要（コメントアウトするか、別途本番用composeファイルを用意）
       # - ./my-blog-backend:/app
       # - /app/node_modules # ホストのnode_modulesがコンテナ内を上書きしないように匿名ボリュームを使う
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
