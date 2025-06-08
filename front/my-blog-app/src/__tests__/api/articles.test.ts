@@ -16,12 +16,12 @@ const mockArticles: Article[] = [
 describe('articlesApi', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    global.fetch = vi.fn();
+    globalThis.fetch = vi.fn();
   });
 
   describe('getAll', () => {
     it('should fetch all articles successfully', async () => {
-      const mockFetch = vi.mocked(global.fetch);
+      const mockFetch = vi.mocked(globalThis.fetch);
       mockFetch.mockResolvedValue({
         ok: true,
         json: () => Promise.resolve(mockArticles),
@@ -36,7 +36,7 @@ describe('articlesApi', () => {
     });
 
     it('should throw error when fetch fails', async () => {
-      const mockFetch = vi.mocked(global.fetch);
+      const mockFetch = vi.mocked(globalThis.fetch);
       mockFetch.mockResolvedValue({
         ok: false,
         status: 500,
@@ -49,7 +49,7 @@ describe('articlesApi', () => {
   describe('getById', () => {
     it('should fetch article by id successfully', async () => {
       const mockArticle = mockArticles[0];
-      const mockFetch = vi.mocked(global.fetch);
+      const mockFetch = vi.mocked(globalThis.fetch);
       mockFetch.mockResolvedValue({
         ok: true,
         json: () => Promise.resolve(mockArticle),

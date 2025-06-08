@@ -12,6 +12,7 @@ export class ArticleController {
       const articles = await this.getAllArticles.execute();
       return this.createCorsResponse(JSON.stringify(articles.map(article => article.toJSON())), 200);
     } catch (error) {
+      console.error('Error in handleGetAllArticles:', error);
       return this.createCorsResponse('Internal Server Error', 500);
     }
   }
@@ -27,6 +28,7 @@ export class ArticleController {
       }
       return this.createCorsResponse(JSON.stringify(article.toJSON()), 200);
     } catch (error) {
+      console.error('Error in handleGetArticleById:', error);
       return this.createCorsResponse('Internal Server Error', 500);
     }
   }

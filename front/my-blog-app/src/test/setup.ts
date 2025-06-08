@@ -1,7 +1,8 @@
 import '@testing-library/jest-dom';
+import { vi, afterEach } from 'vitest';
 
 // Mock fetch
-global.fetch = vi.fn();
+globalThis.fetch = vi.fn();
 
 // Setup clean up after each test
 afterEach(() => {
