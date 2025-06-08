@@ -60,6 +60,16 @@ export class InMemoryArticleRepository implements ArticleRepository {
     return this.toEntity(data);
   }
 
+  async save(_article: Article): Promise<void> {
+    // InMemoryRepositoryでは実装なし（読み取り専用）
+    console.log('InMemoryArticleRepository.save called but not implemented');
+  }
+
+  async delete(_id: ArticleId): Promise<void> {
+    // InMemoryRepositoryでは実装なし（読み取り専用）
+    console.log('InMemoryArticleRepository.delete called but not implemented');
+  }
+
   private toEntity(data: ArticleData): Article {
     return new Article(
       new ArticleId(data.id),

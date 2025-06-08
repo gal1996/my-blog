@@ -10,7 +10,9 @@ RUN npm install -g pnpm
 
 # 依存関係をインストール
 COPY package.json pnpm-lock.yaml ./
+COPY prisma ./prisma
 RUN pnpm install --frozen-lockfile
+RUN npx prisma generate
 
 # ソースコードをコピー
 COPY . .
@@ -30,6 +32,8 @@ WORKDIR /app
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/src ./src
 
 # 環境変数をロードするための .env.local をコピーするならここ (本番ではsecretsで管理)
 # COPY .env.local .env.local
