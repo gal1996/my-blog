@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import type { Article, AsyncState } from '../types';
 import { articlesApi } from '../api';
 
-export const useArticle = (id: number | undefined): AsyncState<Article> => {
+export const useArticle = (id: string | null): AsyncState<Article> => {
   const [state, setState] = useState<AsyncState<Article>>({
     data: null,
     loading: true,
@@ -14,7 +14,7 @@ export const useArticle = (id: number | undefined): AsyncState<Article> => {
       setState({
         data: null,
         loading: false,
-        error: '記事IDが指定されていません',
+        error: null,
       });
       return;
     }
@@ -23,7 +23,7 @@ export const useArticle = (id: number | undefined): AsyncState<Article> => {
       setState(prev => ({ ...prev, loading: true, error: null }));
 
       try {
-        const article = await articlesApi.getById(id);
+        const article = await articlesApi.getById(Number(id));
         setState({
           data: article,
           loading: false,

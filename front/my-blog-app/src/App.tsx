@@ -1,6 +1,6 @@
 import { Route, Routes } from 'react-router-dom';
 import { Header, Footer } from './components';
-import { HomePage, ArticlePage } from './pages';
+import { HomePage, ArticlePage, ArticleEditorPage } from './pages';
 
 function App() {
   return (
@@ -11,6 +11,8 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/articles/:id" element={<ArticlePage />} />
+          <Route path="/articles/new" element={<ArticleEditorPage />} />
+          <Route path="/articles/:id/edit" element={<ArticleEditorPage />} />
           <Route path="/about" element={
             <div className="container" style={{padding: '50px 20px'}}>
               <h2>About</h2>

@@ -9,6 +9,18 @@ export interface Article {
   updatedAt?: string;
 }
 
+export interface CreateArticleRequest {
+  title: string;
+  content: string;
+  imageUrl?: string;
+}
+
+export interface UpdateArticleRequest {
+  title: string;
+  content: string;
+  imageUrl?: string;
+}
+
 export interface ArticleListResponse {
   articles: Article[];
 }

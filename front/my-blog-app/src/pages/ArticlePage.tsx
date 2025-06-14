@@ -5,8 +5,7 @@ import { ArticleDetail, LoadingContainer, ErrorContainer } from '../components';
 
 export const ArticlePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const articleId = id ? parseInt(id, 10) : undefined;
-  const { data: article, loading, error } = useArticle(articleId);
+  const { data: article, loading, error } = useArticle(id || null);
 
   if (loading) {
     return <LoadingContainer />;
