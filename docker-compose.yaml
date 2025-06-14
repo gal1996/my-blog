@@ -27,8 +27,28 @@ services:
     container_name: my-blog-backend
     ports:
       - "3000:3000" # ホストの3000ポートをコンテナの3000ポートにマッピング
+    depends_on:
+      - database # データベースが起動してからバックエンドを起動
+    environment:
+      - DATABASE_URL=postgresql://blog_user:blog_password@database:5432/blog_db
     # volumes:
       # 開発時にはソースコードをマウントしてホットリロードを有効にする
       # 本番イメージでは不要（コメントアウトするか、別途本番用composeファイルを用意）
       # - ./my-blog-backend:/app
       # - /app/node_modules # ホストのnode_modulesがコンテナ内を上書きしないように匿名ボリュームを使う
+
+  # データベースサービス
+  database:
+    image: postgres:16-alpine
+    container_name: my-blog-database
+    environment:
+      - POSTGRES_DB=blog_db
+      - POSTGRES_USER=blog_user
+      - POSTGRES_PASSWORD=blog_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
