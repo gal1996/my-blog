@@ -1,33 +1,166 @@
-import { articles } from '@/app/data/articles'; // 全ての記事データをインポート
-import { NextRequest } from 'next/server'; // Next.jsのRequest型をインポート
+import { prisma } from '@/app/lib/prisma';
+import { NextRequest } from 'next/server';
 
-// 動的なパラメーターの型定義
-// GETリクエストを処理する関数
+function setCORSHeaders(headers: Headers) {
+  headers.set('Access-Control-Allow-Origin', 'http://localhost:5173');
+  headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const id = (await params).id; // URLからidを取得
+  try {
+    const id = (await params).id;
+    const article = await prisma.article.findUnique({
+      where: { id: Number(id) },
+    });
 
-  const article = articles.find((a) => a.id === Number(id)); // idに一致する記事を探す (数値に変換)
+    const responseHeaders = new Headers();
+    setCORSHeaders(responseHeaders);
 
-  const responseHeaders = new Headers();
-  responseHeaders.set('Access-Control-Allow-Origin', 'http://localhost:5173'); // ここもフロントエンドのオリジンを指定
-  responseHeaders.set(
-    'Access-Control-Allow-Methods',
-    'GET, POST, PUT, DELETE, OPTIONS'
-  );
-  responseHeaders.set(
-    'Access-Control-Allow-Headers',
-    'Content-Type, Authorization'
-  );
+    if (!article) {
+      return new Response(JSON.stringify({ error: '記事が見つかりません' }), {
+        status: 404,
+        headers: responseHeaders,
+      });
+    }
 
-  if (!article) {
-    return new Response('Article not found', { status: 404 }); // 記事が見つからない場合は404エラー
+    return new Response(JSON.stringify(article), {
+      status: 200,
+      headers: responseHeaders,
+    });
+  } catch (error) {
+    console.error('記事取得エラー:', error);
+    const responseHeaders = new Headers();
+    setCORSHeaders(responseHeaders);
+
+    return new Response(JSON.stringify({ error: '記事の取得に失敗しました' }), {
+      status: 500,
+      headers: responseHeaders,
+    });
   }
+}
 
-  return new Response(JSON.stringify(article), {
-    status: 200,
-    headers: responseHeaders,
-  });
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const id = (await params).id;
+    const body = await request.json();
+    const { title, content, excerpt, slug, author, tags, metaDescription, isPublished } = body;
+
+    const existingArticle = await prisma.article.findUnique({
+      where: { id: Number(id) },
+    });
+
+    if (!existingArticle) {
+      const responseHeaders = new Headers();
+      setCORSHeaders(responseHeaders);
+      return new Response(JSON.stringify({ error: '記事が見つかりません' }), {
+        status: 404,
+        headers: responseHeaders,
+      });
+    }
+
+    const updatedData: {
+      title?: string;
+      content?: string;
+      excerpt?: string | null;
+      slug?: string;
+      author?: string;
+      tags?: string[];
+      metaDescription?: string | null;
+      isPublished?: boolean;
+      publishedAt?: Date | null;
+    } = {
+      title,
+      content,
+      excerpt,
+      slug,
+      author,
+      tags,
+      metaDescription,
+      isPublished,
+    };
+
+    if (isPublished && !existingArticle.isPublished) {
+      updatedData.publishedAt = new Date();
+    } else if (!isPublished) {
+      updatedData.publishedAt = null;
+    }
+
+    const article = await prisma.article.update({
+      where: { id: Number(id) },
+      data: updatedData,
+    });
+
+    const responseHeaders = new Headers();
+    setCORSHeaders(responseHeaders);
+
+    return new Response(JSON.stringify(article), {
+      status: 200,
+      headers: responseHeaders,
+    });
+  } catch (error) {
+    console.error('記事更新エラー:', error);
+    const responseHeaders = new Headers();
+    setCORSHeaders(responseHeaders);
+
+    return new Response(JSON.stringify({ error: '記事の更新に失敗しました' }), {
+      status: 500,
+      headers: responseHeaders,
+    });
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const id = (await params).id;
+
+    const existingArticle = await prisma.article.findUnique({
+      where: { id: Number(id) },
+    });
+
+    if (!existingArticle) {
+      const responseHeaders = new Headers();
+      setCORSHeaders(responseHeaders);
+      return new Response(JSON.stringify({ error: '記事が見つかりません' }), {
+        status: 404,
+        headers: responseHeaders,
+      });
+    }
+
+    await prisma.article.delete({
+      where: { id: Number(id) },
+    });
+
+    const responseHeaders = new Headers();
+    setCORSHeaders(responseHeaders);
+
+    return new Response(JSON.stringify({ message: '記事を削除しました' }), {
+      status: 200,
+      headers: responseHeaders,
+    });
+  } catch (error) {
+    console.error('記事削除エラー:', error);
+    const responseHeaders = new Headers();
+    setCORSHeaders(responseHeaders);
+
+    return new Response(JSON.stringify({ error: '記事の削除に失敗しました' }), {
+      status: 500,
+      headers: responseHeaders,
+    });
+  }
+}
+
+export async function OPTIONS() {
+  const responseHeaders = new Headers();
+  setCORSHeaders(responseHeaders);
+  return new Response(null, { status: 200, headers: responseHeaders });
 }

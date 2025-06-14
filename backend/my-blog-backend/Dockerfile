@@ -15,6 +15,9 @@ RUN pnpm install --frozen-lockfile
 # ソースコードをコピー
 COPY . .
 
+# Prisma Clientを生成
+RUN pnpm db:generate
+
 # Next.jsアプリケーションをビルド
 # (App RouterベースのNext.jsは通常サーバーサイドで動作するため、buildコマンドで最適化)
 RUN pnpm run build
