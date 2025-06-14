@@ -275,3 +275,342 @@ pnpm test:ui        # Vitest UI使用
 - **新機能追加**: 認証、検索、ページネーション等
 - **E2Eテスト**: Playwright、Cypressなどの導入
 - **アクセシビリティ**: WAI-ARIAガイドラインへの準拠
+
+---
+
+## 6. 記事エディター機能の実装とリファクタリング (2025/06/14)
+
+### 6.1 概要
+
+Markdownベースの記事作成・編集機能を実装し、テスト容易性とメンテナビリティを重視したリファクタリングを行いました。
+
+### 6.2 新機能の実装
+
+#### 記事エディター機能
+- **新規記事作成**: `/articles/new` ルート
+- **既存記事編集**: `/articles/:id/edit` ルート
+- **Markdownエディター**: `@uiw/react-md-editor` を使用
+- **画像URL設定**: 画像URLの入力とリアルタイムプレビュー
+- **バリデーション**: タイトル・コンテンツの必須入力チェック
+
+#### 追加された依存関係
+```json
+{
+  "@uiw/react-md-editor": "^4.0.7"
+}
+```
+
+### 6.3 リファクタリング後のファイル構造
+
+```
+src/
+├── hooks/
+│   ├── useArticleForm.ts       # フォーム状態管理
+│   ├── useArticleMutation.ts   # API呼び出し管理
+│   ├── useArticle.ts
+│   ├── useArticles.ts
+│   └── index.ts
+├── utils/
+│   ├── validation.ts           # バリデーションロジック
+│   └── __tests__/
+│       └── validation.test.ts  # バリデーションテスト
+├── components/
+│   ├── article/
+│   │   └── ImagePreview.tsx    # 画像プレビューコンポーネント
+│   ├── forms/
+│   │   ├── ArticleFormFields.tsx   # フォームフィールド
+│   │   └── ArticleFormActions.tsx  # フォームアクション
+│   ├── ui/
+│   └── ...
+├── pages/
+│   ├── ArticleEditorPage.tsx   # リファクタリング済みエディター
+│   └── ...
+├── types/
+│   └── article.ts             # 拡張された型定義
+└── api/
+    ├── client.ts              # PUT/DELETE メソッド追加
+    └── articles.ts            # CRUD API完備
+```
+
+### 6.4 アーキテクチャパターンの適用
+
+#### 責務分離の実現
+
+**Before (単一の大きなコンポーネント)**
+```typescript
+// ArticleEditorPage.tsx (200行超)
+export const ArticleEditorPage = () => {
+  // フォーム管理
+  const [formData, setFormData] = useState(/* ... */);
+  
+  // API呼び出し
+  const handleSubmit = async (e) => {
+    // バリデーション
+    // API呼び出し
+    // エラーハンドリング
+  };
+  
+  // 大量のJSX
+  return (/* 複雑なフォーム */);
+};
+```
+
+**After (責務分離)**
+```typescript
+// ArticleEditorPage.tsx (50行程度)
+export const ArticleEditorPage = () => {
+  const { formData, updateTitle, updateContent, updateImageUrl } = useArticleForm({ 
+    initialArticle: article 
+  });
+  const { isSubmitting, createNewArticle, updateExistingArticle } = useArticleMutation();
+  
+  const handleSubmit = async (e) => {
+    const validationResult = validateArticleForm(formData);
+    // 簡潔なロジック
+  };
+  
+  return (
+    <form onSubmit={handleSubmit}>
+      <ArticleFormFields /* props */ />
+      <ArticleFormActions /* props */ />
+    </form>
+  );
+};
+```
+
+#### カスタムフックによるロジック分離
+
+**useArticleForm.ts**: フォーム状態管理
+```typescript
+export const useArticleForm = ({ initialArticle }: UseArticleFormProps = {}) => {
+  const [formData, setFormData] = useState<ArticleFormData>({
+    title: '',
+    content: '',
+    imageUrl: ''
+  });
+
+  const updateField = (field: keyof ArticleFormData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  return {
+    formData,
+    updateTitle: (value: string) => updateField('title', value),
+    updateContent: (value: string) => updateField('content', value),
+    updateImageUrl: (value: string) => updateField('imageUrl', value),
+    resetForm: () => setFormData({ title: '', content: '', imageUrl: '' })
+  };
+};
+```
+
+**useArticleMutation.ts**: API呼び出し管理
+```typescript
+export const useArticleMutation = (): UseArticleMutationResult => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const createNewArticle = async (formData: ArticleFormData): Promise<void> => {
+    setIsSubmitting(true);
+    try {
+      await createArticle(/* mapped data */);
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return { isSubmitting, error, createNewArticle, updateExistingArticle };
+};
+```
+
+#### バリデーションロジックの分離
+
+**validation.ts**: 純粋関数による検証
+```typescript
+export const validateArticleForm = (formData: ArticleFormData): ValidationResult => {
+  const errors: Record<string, string> = {};
+
+  if (!formData.title.trim()) {
+    errors.title = 'タイトルを入力してください';
+  } else if (formData.title.trim().length > 100) {
+    errors.title = 'タイトルは100文字以内で入力してください';
+  }
+
+  if (!formData.content.trim()) {
+    errors.content = 'コンテンツを入力してください';
+  } else if (formData.content.trim().length < 10) {
+    errors.content = 'コンテンツは10文字以上で入力してください';
+  }
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors
+  };
+};
+```
+
+### 6.5 UIコンポーネントの細分化
+
+#### ArticleFormFields.tsx
+```typescript
+interface ArticleFormFieldsProps {
+  formData: ArticleFormData;
+  onTitleChange: (value: string) => void;
+  onContentChange: (value: string) => void;
+  onImageUrlChange: (value: string) => void;
+  disabled?: boolean;
+}
+
+export const ArticleFormFields: React.FC<ArticleFormFieldsProps> = ({
+  formData,
+  onTitleChange,
+  onContentChange,
+  onImageUrlChange,
+  disabled = false
+}) => {
+  return (
+    <div className="space-y-6">
+      {/* タイトル入力 */}
+      {/* 画像URL入力 + プレビュー */}
+      {/* Markdownエディター */}
+    </div>
+  );
+};
+```
+
+#### ImagePreview.tsx
+```typescript
+export const ImagePreview: React.FC<ImagePreviewProps> = ({ 
+  imageUrl, 
+  alt = 'プレビュー'
+}) => {
+  if (!imageUrl.trim()) return null;
+
+  return (
+    <div className="mt-2">
+      <img
+        src={imageUrl}
+        alt={alt}
+        className="max-w-xs max-h-48 object-cover rounded-md border border-gray-300"
+        onError={(e) => {
+          const target = e.target as HTMLImageElement;
+          target.style.display = 'none';
+        }}
+      />
+    </div>
+  );
+};
+```
+
+### 6.6 テスト実装
+
+#### バリデーションロジックのテスト
+```typescript
+// validation.test.ts
+describe('validateArticleForm', () => {
+  it('有効なフォームデータの場合、isValidがtrueになる', () => {
+    const validFormData = {
+      title: 'Test Title',
+      content: 'This is a test content with enough length',
+      imageUrl: 'https://example.com/image.jpg'
+    };
+    
+    const result = validateArticleForm(validFormData);
+    expect(result.isValid).toBe(true);
+    expect(result.errors).toEqual({});
+  });
+
+  it('タイトルが空の場合、エラーになる', () => {
+    const invalidData = { ...validFormData, title: '' };
+    const result = validateArticleForm(invalidData);
+    
+    expect(result.isValid).toBe(false);
+    expect(result.errors.title).toBe('タイトルを入力してください');
+  });
+});
+```
+
+#### カスタムフックのテスト
+```typescript
+// useArticleForm.test.ts
+describe('useArticleForm', () => {
+  it('updateTitle関数でタイトルを更新できる', () => {
+    const { result } = renderHook(() => useArticleForm());
+    
+    act(() => {
+      result.current.updateTitle('New Title');
+    });
+    
+    expect(result.current.formData.title).toBe('New Title');
+  });
+});
+```
+
+### 6.7 API層の拡張
+
+#### HTTP メソッドの追加
+```typescript
+// client.ts
+export class ApiClient {
+  async put<T>(endpoint: string, data: unknown): Promise<T> {
+    return this.request<T>(endpoint, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+  }
+
+  async delete<T = void>(endpoint: string): Promise<T> {
+    return this.request<T>(endpoint, { method: 'DELETE' });
+  }
+}
+```
+
+#### CRUD API の完備
+```typescript
+// articles.ts
+export const articlesApi = {
+  getAll: (): Promise<Article[]> => apiClient.get('/articles'),
+  getById: (id: number): Promise<Article> => apiClient.get(`/articles/${id}`),
+  create: (data: CreateArticleRequest): Promise<Article> => apiClient.post('/articles', data),
+  update: (id: string, data: UpdateArticleRequest): Promise<Article> => apiClient.put(`/articles/${id}`, data),
+  delete: (id: string): Promise<void> => apiClient.delete(`/articles/${id}`)
+};
+```
+
+### 6.8 型安全性の向上
+
+#### 拡張された型定義
+```typescript
+// types/article.ts
+export interface CreateArticleRequest {
+  title: string;
+  content: string;
+  imageUrl?: string;  // 新規追加
+}
+
+export interface UpdateArticleRequest {
+  title: string;
+  content: string;
+  imageUrl?: string;  // 新規追加
+}
+```
+
+### 6.9 リファクタリングの効果
+
+#### テスト容易性の向上
+- **単体テスト**: 各フック・関数を独立してテスト可能
+- **結合テスト**: コンポーネント間の連携を分離してテスト
+- **モック**: API呼び出しを簡単にモック化
+
+#### メンテナビリティの向上
+- **責務分離**: 変更時の影響範囲を最小化
+- **再利用性**: フックとコンポーネントの他画面での再利用
+- **可読性**: コードの意図が明確で理解しやすい
+
+#### 開発効率の向上
+- **型安全**: コンパイル時エラーによる早期バグ発見
+- **Hot Reload**: 変更の即座な反映
+- **デバッグ**: 問題の原因特定が容易
