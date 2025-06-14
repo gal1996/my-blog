@@ -1,96 +1,48 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import MDEditor from '@uiw/react-md-editor';
-import { useArticle } from '../hooks';
-import { createArticle, updateArticle } from '../api';
+import { useArticle, useArticleForm, useArticleMutation } from '../hooks';
 import { LoadingSpinner, ErrorMessage } from '../components/ui';
-import type { CreateArticleRequest, UpdateArticleRequest } from '../types';
-
-interface ArticleFormData {
-  title: string;
-  content: string;
-  imageUrl: string;
-}
+import { ArticleFormFields } from '../components/forms/ArticleFormFields';
+import { ArticleFormActions } from '../components/forms/ArticleFormActions';
+import { validateArticleForm, getFirstValidationError } from '../utils/validation';
 
 export const ArticleEditorPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const isEditing = Boolean(id);
   
-  const [formData, setFormData] = useState<ArticleFormData>({
-    title: '',
-    content: '',
-    imageUrl: ''
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   const { data: article, loading, error: fetchError } = useArticle(isEditing ? id! : null);
+  const { formData, updateTitle, updateContent, updateImageUrl } = useArticleForm({ 
+    initialArticle: article 
+  });
+  const { isSubmitting, error: mutationError, createNewArticle, updateExistingArticle } = useArticleMutation();
+  const [validationError, setValidationError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (isEditing && article) {
-      setFormData({
-        title: article.title,
-        content: article.content,
-        imageUrl: article.imageUrl || ''
-      });
-    }
-  }, [isEditing, article]);
-
-  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      title: e.target.value
-    }));
-  };
-
-  const handleImageUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      imageUrl: e.target.value
-    }));
-  };
-
-  const handleContentChange = (value?: string) => {
-    setFormData(prev => ({
-      ...prev,
-      content: value || ''
-    }));
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.title.trim() || !formData.content.trim()) {
-      setError('タイトルと内容を入力してください');
+    // バリデーション
+    const validationResult = validateArticleForm(formData);
+    if (!validationResult.isValid) {
+      const errorMessage = getFirstValidationError(validationResult);
+      setValidationError(errorMessage);
       return;
     }
-
-    setIsSubmitting(true);
-    setError(null);
+    
+    // バリデーション成功時はエラーをクリア
+    setValidationError(null);
 
     try {
       if (isEditing && id) {
-        const updateData: UpdateArticleRequest = {
-          title: formData.title.trim(),
-          content: formData.content.trim(),
-          imageUrl: formData.imageUrl.trim() || undefined
-        };
-        await updateArticle(id, updateData);
+        await updateExistingArticle(id, formData);
       } else {
-        const createData: CreateArticleRequest = {
-          title: formData.title.trim(),
-          content: formData.content.trim(),
-          imageUrl: formData.imageUrl.trim() || undefined
-        };
-        await createArticle(createData);
+        await createNewArticle(formData);
       }
       
       navigate('/');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '記事の保存に失敗しました');
-    } finally {
-      setIsSubmitting(false);
+    } catch {
+      // エラーはuseArticleMutationで管理されている
     }
   };
 
@@ -114,6 +66,8 @@ export const ArticleEditorPage: React.FC = () => {
     );
   }
 
+  const displayError = validationError || mutationError || fetchError;
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto">
@@ -122,92 +76,24 @@ export const ArticleEditorPage: React.FC = () => {
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* タイトル入力 */}
-          <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-              タイトル
-            </label>
-            <input
-              type="text"
-              id="title"
-              value={formData.title}
-              onChange={handleTitleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="記事のタイトルを入力してください"
-              required
-            />
-          </div>
-
-          {/* 画像URL入力 */}
-          <div>
-            <label htmlFor="imageUrl" className="block text-sm font-medium text-gray-700 mb-2">
-              画像URL（任意）
-            </label>
-            <input
-              type="url"
-              id="imageUrl"
-              value={formData.imageUrl}
-              onChange={handleImageUrlChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="https://example.com/image.jpg"
-            />
-            {formData.imageUrl && (
-              <div className="mt-2">
-                <img
-                  src={formData.imageUrl}
-                  alt="プレビュー"
-                  className="max-w-xs max-h-48 object-cover rounded-md border border-gray-300"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                  }}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Markdownエディター */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              内容（Markdown形式）
-            </label>
-            <div className="border border-gray-300 rounded-md overflow-hidden">
-              <MDEditor
-                value={formData.content}
-                onChange={handleContentChange}
-                height={500}
-                preview="edit"
-                hideToolbar={false}
-                visibleDragbar={false}
-                data-color-mode="light"
-              />
-            </div>
-          </div>
+          <ArticleFormFields
+            formData={formData}
+            onTitleChange={updateTitle}
+            onContentChange={updateContent}
+            onImageUrlChange={updateImageUrl}
+            disabled={isSubmitting}
+          />
 
           {/* エラーメッセージ */}
-          {error && (
-            <ErrorMessage error={error} />
+          {displayError && (
+            <ErrorMessage error={displayError} />
           )}
 
-          {/* ボタン */}
-          <div className="flex gap-4">
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? '保存中...' : isEditing ? '更新' : '作成'}
-            </button>
-            
-            <button
-              type="button"
-              onClick={handleCancel}
-              disabled={isSubmitting}
-              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              キャンセル
-            </button>
-          </div>
+          <ArticleFormActions
+            isEditing={isEditing}
+            isSubmitting={isSubmitting}
+            onCancel={handleCancel}
+          />
         </form>
       </div>
     </div>
